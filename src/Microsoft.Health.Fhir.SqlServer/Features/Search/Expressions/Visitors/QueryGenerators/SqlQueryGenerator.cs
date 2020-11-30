@@ -469,7 +469,33 @@ namespace Microsoft.Health.Fhir.SqlServer.Features.Search.Expressions.Visitors.Q
                             }
                         }
 
-                        AppendHistoryClause(delimited, referenceTargetResourceTableAlias);
+                        // Limit the join by reference version
+                        if (!includeExpression.Reversed)
+                        {
+                            using (var mainClause = delimited.BeginDelimitedElement().BeginOredDelimitedScope())
+                            {
+                                // if it is a versioned reference select a matching version
+                                using (var clause = mainClause.BeginDelimitedElement().BeginAndedDelimitedScope())
+                                {
+                                    clause.BeginDelimitedElement().Append(VLatest.ReferenceSearchParam.ReferenceResourceVersion, referenceSourceTableAlias).Append(" IS NOT NULL");
+                                    clause.BeginDelimitedElement().Append(VLatest.ReferenceSearchParam.ReferenceResourceVersion, referenceSourceTableAlias).Append(" = ")
+                                        .Append(VLatest.Resource.Version, referenceTargetResourceTableAlias);
+                                }
+
+                                // or for unversioned reference select the latest version
+                                using (var clause = mainClause.BeginDelimitedElement().BeginAndedDelimitedScope())
+                                {
+                                    clause.BeginDelimitedElement().Append(VLatest.ReferenceSearchParam.ReferenceResourceVersion, referenceSourceTableAlias).Append(" IS NULL");
+                                    AppendHistoryClause(clause, referenceTargetResourceTableAlias);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Ignore reference versions for reverse include
+                            AppendHistoryClause(delimited, referenceTargetResourceTableAlias);
+                        }
+
                         AppendHistoryClause(delimited, referenceSourceTableAlias);
 
                         table = !includeExpression.Reversed ? referenceSourceTableAlias : referenceTargetResourceTableAlias;
