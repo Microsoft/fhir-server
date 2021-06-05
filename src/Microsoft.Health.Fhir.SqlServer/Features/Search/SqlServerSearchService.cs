@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using EnsureThat;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using Microsoft.Health.Fhir.Core.Features;
 using Microsoft.Health.Fhir.Core.Features.Context;
 using Microsoft.Health.Fhir.Core.Features.Persistence;
 using Microsoft.Health.Fhir.Core.Features.Search;
@@ -53,6 +54,7 @@ namespace Microsoft.Health.Fhir.SqlServer.Features.Search
         private readonly ISortingValidator _sortingValidator;
         private readonly IFhirRequestContextAccessor _requestContextAccessor;
         private const int _defaultResourceTableFinalSelectColumnCount = 11;
+        private bool? _didWeSearchForSortValue;
 
         public SqlServerSearchService(
             ISearchOptionsFactory searchOptionsFactory,
@@ -90,13 +92,55 @@ namespace Microsoft.Health.Fhir.SqlServer.Features.Search
 
         protected override async Task<SearchResult> SearchInternalAsync(SearchOptions searchOptions, CancellationToken cancellationToken)
         {
-            SearchResult searchResult;
+            SearchResult searchResult = await SearchImpl(searchOptions, SqlSearchType.Default, null, cancellationToken);
+            int resultCount = searchResult.Results.Count();
+            if (!searchOptions.IsSortWithFilter &&
+                searchResult.ContinuationToken == null &&
+                resultCount <= searchOptions.MaxItemCount &&
+                searchOptions.Sort != null &&
+                searchOptions.Sort.Count > 0 &&
+                searchOptions.Sort[0].searchParameterInfo.Code != KnownQueryParameterNames.LastUpdated)
+            {
+                // We seem to have run a sort which has returned less results than what max we can return.
+                // Let's determine whether we need to execute another query or not.
+                if ((searchOptions.Sort[0].sortOrder == SortOrder.Ascending && _didWeSearchForSortValue.HasValue && !_didWeSearchForSortValue.Value) ||
+                    (searchOptions.Sort[0].sortOrder == SortOrder.Descending && _didWeSearchForSortValue.HasValue && _didWeSearchForSortValue.Value))
+                {
+                    if (searchOptions.MaxItemCount - resultCount == 0)
+                    {
+                        // Since we are already returning MaxItemCount number of resources we don't want
+                        // to execute another search right now just to drop all the resources. We will return
+                        // a "special" ct so that we the subsequent request will be handled correctly.
+                        var ct = new ContinuationToken(new object[]
+                            {
+                                    "sentinelSortValue",
+                                    0,
+                            });
+
+                        searchResult = new SearchResult(searchResult.Results, ct.ToJson(), searchResult.SortOrder, searchResult.UnsupportedSearchParameters);
+                    }
+                    else
+                    {
+                        var finalResultsInOrder = new List<SearchResultEntry>();
+                        finalResultsInOrder.AddRange(searchResult.Results);
+                        searchOptions.SortQuerySecondPhase = true;
+                        searchOptions.MaxItemCount -= resultCount;
+
+                        searchResult = await SearchImpl(searchOptions, SqlSearchType.Default, null, cancellationToken);
+
+                        finalResultsInOrder.AddRange(searchResult.Results);
+                        searchResult = new SearchResult(
+                            finalResultsInOrder,
+                            searchResult.ContinuationToken,
+                            searchResult.SortOrder,
+                            searchResult.UnsupportedSearchParameters);
+                    }
+                }
+            }
 
             // If we should include the total count of matching search results
             if (searchOptions.IncludeTotal == TotalType.Accurate && !searchOptions.CountOnly)
             {
-                searchResult = await SearchImpl(searchOptions, SqlSearchType.Default, null, cancellationToken);
-
                 // If this is the first page and there aren't any more pages
                 if (searchOptions.ContinuationToken == null && searchResult.ContinuationToken == null)
                 {
@@ -121,10 +165,6 @@ namespace Microsoft.Health.Fhir.SqlServer.Features.Search
                         searchOptions.CountOnly = false;
                     }
                 }
-            }
-            else
-            {
-                searchResult = await SearchImpl(searchOptions, SqlSearchType.Default, null, cancellationToken);
             }
 
             return searchResult;
@@ -231,6 +271,7 @@ namespace Microsoft.Health.Fhir.SqlServer.Features.Search
 
                     string sortValue = null;
                     var isResultPartial = false;
+                    int numberOfColumnsRead = 0;
 
                     while (await reader.ReadAsync(cancellationToken))
                     {
@@ -247,6 +288,7 @@ namespace Microsoft.Health.Fhir.SqlServer.Features.Search
                             out bool isRawResourceMetaSet,
                             out string searchParameterHash,
                             out Stream rawResourceStream);
+                        numberOfColumnsRead = reader.FieldCount;
 
                         // If we get to this point, we know there are more results so we need a continuation token
                         // Additionally, this resource shouldn't be included in the results
@@ -338,6 +380,14 @@ namespace Microsoft.Health.Fhir.SqlServer.Features.Search
                                 OperationOutcomeConstants.IssueSeverity.Warning,
                                 OperationOutcomeConstants.IssueType.Incomplete,
                                 Core.Resources.TruncatedIncludeMessage));
+                    }
+
+                    // If this is a sort query, lets keep track of whether we actually searched for sort values.
+                    if (searchOptions.Sort != null &&
+                        searchOptions.Sort.Count > 0 &&
+                        searchOptions.Sort[0].searchParameterInfo.Code != KnownQueryParameterNames.LastUpdated)
+                    {
+                        _didWeSearchForSortValue = numberOfColumnsRead > _defaultResourceTableFinalSelectColumnCount;
                     }
 
                     return new SearchResult(resources, continuationToken?.ToJson(), searchOptions.Sort, searchOptions.UnsupportedSearchParams);
