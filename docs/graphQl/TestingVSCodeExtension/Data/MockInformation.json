@@ -1,0 +1,36 @@
+{
+    "id": "6",
+    "resourceType": "Patient",
+    "name": [
+        {
+            "family": "Sams",
+            "given": [
+                "Esteban"
+            ],
+            "prefix": [
+                "Mr."
+            ]
+        }
+    ],
+    "active" : true,
+    "telecom" : [
+      {
+        "system" : "phone",
+        "value" : "555-555-5555",
+        "use" : "home"
+      }
+    ],
+    "gender" : "male",
+    "birthDate" : "2001-04-13",
+    "address" : [
+      {
+        "line" : [
+          "10 Meadow St"
+        ],
+        "city" : "Mounds",
+        "state" : "OK",
+        "postalCode" : "74047",
+        "country" : "US"
+      }
+    ]
+}

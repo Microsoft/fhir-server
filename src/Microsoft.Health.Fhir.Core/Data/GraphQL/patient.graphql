@@ -1,0 +1,75 @@
+﻿# FHIR GraphQL Schema. Version 4.6.0
+
+# import the types from 'types.graphql'
+
+type Patient {
+  id: ID
+  meta: Meta
+  implicitRules: String  implicitRulesElement: Element #Before uri
+  language: String  languageElement: Element # Before code
+  text: Narrative
+  #contained: [Resource]
+  extension: [Extension]
+  modifierExtension: [Extension]
+  identifier: [Identifier]
+  active: Boolean  activeElement: Element
+  name: [HumanName]
+  telecom: [ContactPoint]
+  gender: AdministrativeGender  genderElement: Element  # Before: code
+  birthDate: String  birthDateElement: Element # Before date
+  # deceasedBoolean: Boolean  _deceasedBoolean: ElementBase
+  # deceasedDateTime: dateTime  _deceasedDateTime: ElementBase
+  address: [Address]
+  maritalStatus: CodeableConcept
+  #multipleBirthBoolean: Boolean  #_multipleBirthBoolean: ElementBase
+  #multipleBirthInterger: Int  #_multipleBirthInteger: ElementBase
+  photo: [Attachment]
+  contact: [ContactComponent] # Before: PatientContact
+  communication: [CommunicationComponent] # Before: PatientCommunication
+  generalPractitioner: [ResourceReference]
+  managingOrganization: ResourceReference # Before: Reference
+  link: [LinkComponent] # Before: PatientLink
+}
+
+type ContactComponent { # Before: PatientContact
+  elementId: ID
+  extension: [Extension]
+  modifierExtension: [Extension]
+  relationship: [CodeableConcept]
+  name: HumanName
+  telecom: [ContactPoint]
+  address: Address
+  gender: AdministrativeGender  genderElement: Element # Before: code
+  organization: ResourceReference # Before: Reference
+  period: Period
+}
+
+type CommunicationComponent { # Before: PatientCommunication
+  elementId: ID
+  extension: [Extension]
+  modifierExtension: [Extension]
+  language: CodeableConcept!
+  preferred: Boolean  preferredElement: Element
+}
+
+type LinkComponent { #Before PatientLink
+  elementId: ID
+  extension: [Extension]
+  modifierExtension: [Extension]
+  other: ResourceReference! # Before: Reference
+  type: LinkType  typeElement: Element # Before: code
+}
+
+enum AdministrativeGender {
+    MALE,
+    FEMALE,
+    OTHER,
+    UNKNOWN
+}
+
+enum LinkType {
+    REPLACEDBY,
+    REPLACES,
+    REFER,
+    SEEALSO
+}

@@ -4,19 +4,26 @@
 // -------------------------------------------------------------------------------------------------
 
 using System;
+using Hl7.Fhir.Model;
+using HotChocolate.AspNetCore;
+using MediatR;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Health.Fhir.Api.Features.GraphQl.DataLoader;
 using Microsoft.Health.Fhir.Azure;
 using Microsoft.Health.SqlServer.Configs;
+using Microsoft.Health.Fhir.Shared.Api.Features.GraphQl;
 
 namespace Microsoft.Health.Fhir.Web
 {
     public class Startup
     {
+        private const string Path = "../Microsoft.Health.Fhir.Core/Data/GraphQl/";
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -24,10 +31,53 @@ namespace Microsoft.Health.Fhir.Web
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public virtual void ConfigureServices(IServiceCollection services)
         {
             services.AddDevelopmentIdentityProvider(Configuration);
+
+            services
+                .AddRouting()
+
+                // Adding the GraphQL server core service
+                .AddGraphQLServer()
+
+                // Adding our scheme
+                .AddDocumentFromFile(Path + "patient.graphql")
+                .AddDocumentFromFile(Path + "types.graphql")
+
+                // Next we add the types to our schema
+                .AddQueryType(d => d.Name("Query"))
+                    .AddTypeExtension<PatientQueries>()
+                .BindComplexType<Address>()
+                .BindComplexType<Attachment>()
+                .BindComplexType<Code>()
+                .BindComplexType<CodeableConcept>()
+                .BindComplexType<Coding>()
+                .BindComplexType<ContactPoint>()
+                .BindComplexType<DataType>()
+                .BindComplexType<DomainResource>()
+                .BindComplexType<Element>()
+                .BindComplexType<Extension>()
+                .BindComplexType<FhirBoolean>()
+                .BindComplexType<FhirDateTime>()
+                .BindComplexType<HumanName>()
+                .BindComplexType<Identifier>()
+                .BindComplexType<Meta>()
+                .BindComplexType<Narrative>()
+                .BindComplexType<Patient>()
+                .BindComplexType<Patient.LinkComponent>()
+                .BindComplexType<Patient.CommunicationComponent>()
+                .BindComplexType<Patient.ContactComponent>()
+                .BindComplexType<Period>()
+                .BindComplexType<PrimitiveType>()
+                .BindComplexType<Resource>()
+                .BindComplexType<ResourceReference>()
+
+                // Adding DataLoader to our system
+                .AddDataLoader<PatientByIdDataLoader>();
+
+            services.AddMediatR(typeof(PatientByIdDataLoader));
+            services.AddHttpContextAccessor();
 
             Core.Registration.IFhirServerBuilder fhirServerBuilder = services.AddFhirServer(Configuration)
                 .AddAzureExportDestinationClient()
@@ -89,6 +139,19 @@ namespace Microsoft.Health.Fhir.Web
             app.UsePrometheusHttpMetrics();
             app.UseFhirServer();
             app.UseDevelopmentIdentityProviderIfConfigured();
+            app.UseWebSockets();
+            app.UseRouting();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapGraphQL() // By default it is /graphql, but I can change it to /$graphql
+                .WithOptions(new GraphQLServerOptions
+                {
+                    AllowedGetOperations = AllowedGetOperations.QueryAndMutation,
+                    EnableSchemaRequests = true,
+                    EnableMultipartRequests = true,
+                    Tool = { Enable = true },
+                });
+            });
         }
 
         /// <summary>

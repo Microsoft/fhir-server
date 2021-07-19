@@ -1,0 +1,237 @@
+﻿# # FHIR GraphQL Schema. Version 4.6.0
+# FHIR Defined Primitive types
+
+type Element {
+    elementId: String
+    extension: [Extension]
+}
+
+type Address {
+  elementId: String
+  extension: [Extension]
+  use: AddressUse  useElement: Element # Before code
+  type: AddressType  typeElement: Element # Before code
+  text: String  textElement: Element
+  line: [String]  lineElement: [Element]
+  city: String  cityElement: Element
+  district: String  districtElement: Element
+  state: String  stateElement: Element
+  postalCode: String  postalCodeElement: Element
+  country: String  countryElement: Element
+  period: Period
+}
+
+type Attachment {
+  elementId: String
+  extension: [Extension]
+  contentType: String  contentTypeElement: Element
+  language: String  languageElement: Element
+  data: ByteArray  dataElement: Element
+  url: String  urlElement: Element
+  size: Int  sizeElement: Element
+  hash: ByteArray  hashElement: Element
+  title: String  titleElement: Element
+  creation: String  creationElement: Element
+  #height: Int  #_height: ElementBase
+  #width: Int  #_width: ElementBase
+  #frames: Int  #_frames: ElementBase
+  #duration: decimal  _duration: ElementBase
+  #pages: positiveInt  _pages: ElementBase
+}
+
+type CodeableConcept {
+  elementId: String
+  extension: [Extension]
+  coding: [Coding]
+  text: String  textElement: Element
+}
+
+type Coding {
+  elementId: String
+  extension: [Extension]
+  system: String  systemElement: Element
+  version: String  versionElement: Element
+  code: String  codeElement: Element
+  display: String  display: Element
+  userSelected: Boolean  userSelectedElement: Element
+}
+
+type ContactPoint {
+  elementId: String
+  extension: [Extension]
+  system: ContactPointSystem  systemElement: Element
+  value: String  valueElement: Element
+  use: ConctactPointUse  useElement: Element
+  rank: Int  rankElement: Element
+  period: Period
+}
+
+type Extension {
+  elementId: String
+  extension: [Extension]
+  url: String
+  #valueBase64Binary: base64Binary  _valueBase64Binary: ElementBase
+  #valueFhirBoolean: Boolean  #_valueBoolean: ElementBase
+  #valueCanonical: canonical  _valueCanonical: ElementBase
+  #valueCode: code  _valueCode: ElementBase
+  #birthDate: Date  #_birthDate: Element
+  #valueDateTime: String  #_valueDateTime: Element
+  #valueDecimal: decimal  _valueDecimal: ElementBase
+  #valueId: ID  _valueId: ElementBase
+  #valueInstant: instant  _valueInstant: ElementBase
+  #valueInteger: Int  _valueInteger: ElementBase
+  #valueInteger64: integer64  _valueInteger64: ElementBase
+  #valueMarkdown: markdown  _valueMarkdown: ElementBase
+  #valueOid: oid  _valueOid: ElementBase
+  #valuePositiveInt: positiveInt  _valuePositiveInt: ElementBase
+  #valueString: String  _valueString: ElementBase
+  #valueTime: time  _valueTime: ElementBase
+  #valueUnsignedInt: unsignedInt  _valueUnsignedInt: ElementBase
+  #valueUri: uri  _valueUri: ElementBase
+  #valueUrl: url  _valueUrl: ElementBase
+  #valueUuid: uuid  _valueUuid: ElementBase
+  #valueAddress: Address
+  #valueAge: Age
+  #valueAnnotation: Annotation
+  #valueAttachment: Attachment
+  #valueCodeableConcept: CodeableConcept
+  #valueCoding: Coding
+  #valueContactPoint: ContactPoint
+  #valueCount: Count
+  #valueDistance: Distance
+  #valueDuration: Duration
+  #valueHumanName: HumanName
+  #valueIdentifier: Identifier
+  #valueMoney: Money
+  #valuePeriod: Period
+  #valueQuantity: Quantity
+  #valueRange: Range
+  #valueRatio: Ratio
+  #valueSampledData: SampledData
+  #valueSignature: Signature
+  #valueTiming: Timing
+  #valueContactDetail: ContactDetail
+  #valueContributor: Contributor
+  #valueDataRequirement: DataRequirement
+  #valueExpression: Expression
+  #valueParameterDefinition: ParameterDefinition
+  #valueRelatedArtifact: RelatedArtifact
+  #valueTriggerDefinition: TriggerDefinition
+  #valueUsageContext: UsageContext
+  #valueDosage: Dosage
+  #valueMeta: Meta
+}
+
+type HumanName {
+  elementId: String
+  extension: [Extension]
+  use: NameUse  useElement: Element
+  text: String  textElement: Element
+  family: String  familyElement: Element
+  given: [String]  givenElement: [Element]
+  prefix: [String]  prefixElement: [Element]
+  suffix: [String]  suffixElement: [Element]
+  period: Period
+}
+
+type Identifier {
+  elementId: String
+  extension: [Extension]
+  use: IdentifierUse  useElement: Element
+  type: CodeableConcept
+  system: String  systemElement: Element
+  value: String  valueElement: Element
+  period: Period
+  assigner: ResourceReference # Before: Reference
+}
+
+type Meta {
+  elementId: String
+  extension: [Extension]
+  versionId: ID  versionIdElement: Element
+  lastUpdated: DateTime  lastUpdatedElement: Element
+  source: String  sourceElement: Element
+  profile: [String]  profileElement: [Element]
+  security: [Coding]
+  tag: [Coding]
+}
+
+type Narrative {
+  elementId: String
+  extension: [Extension]
+  status: NarrativeStatus  statusElement: Element
+  div: String
+}
+
+type Period {
+  elementId: String
+  extension: [Extension]
+  start: String  startElement: Element
+  end: String  endElement: Element
+}
+
+type ResourceReference { # Before: Reference
+  elementId: String
+  extension: [Extension]
+  reference: String  referenceElement: Element
+  type: String  typeElement: Element
+  identifier: Identifier
+  display: String  displayElement: Element
+}
+
+enum AddressUse {
+    HOME,
+    WORK,
+    TEMP,
+    OLD,
+    BILLING
+}
+
+enum AddressType {
+    POSTAL,
+    PHYSICAL,
+    BOTH
+}
+
+enum ContactPointSystem {
+    PHONE,
+    FAX,
+    EMAIL,
+    PAGER,
+    URL,
+    SMS,
+    OTHER
+}
+
+enum ConctactPointUse {
+    HOME,
+    WORK,
+    TEMP,
+    OLD,
+    MOBILE
+}
+
+enum IdentifierUse {
+    USUAL,
+    OFFICIAL,
+    TEMP,
+    SECONDARY,
+    OLD
+}
+
+enum NameUse {
+    USUAL,
+    OFFICIAL,
+    TEMP,
+    NICKNAME,
+    ANONYMOUS,
+    OLD,
+    MAIDEN
+}
+
+enum NarrativeStatus {
+    GENERATED,
+    EXTENSIONS,
+    ADDITIONAL,
+    EMPTY
+}
