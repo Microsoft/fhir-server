@@ -7,6 +7,7 @@ using System;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Core.Extensions;
+using Microsoft.Health.Fhir.Core.Features.Operations.Import.Models;
 using Microsoft.Health.Fhir.Core.Models;
 using Newtonsoft.Json;
 
@@ -147,6 +148,11 @@ namespace Microsoft.Health.Fhir.Tests.Common
         public static string GetXml(string fileName)
         {
             return EmbeddedResourceManager.GetStringContent(EmbeddedResourceSubNamespace, fileName, "xml");
+        }
+
+        public static string GetNdJson(string fileName)
+        {
+            return EmbeddedResourceManager.GetStringContent(EmbeddedResourceSubNamespace, fileName, "ndjson");
         }
     }
 }

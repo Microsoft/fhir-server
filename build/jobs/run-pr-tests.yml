@@ -124,7 +124,6 @@ jobs:
             }
             Write-Host "##vso[task.setvariable variable=$($environmentVariableName)]$($plainValue)"
         }
-        # ----------------------------------------
 
         dotnet dev-certs https
 
@@ -161,6 +160,8 @@ jobs:
       'user_globalConverterUser_secret': $(user_globalConverterUser_secret)
       'user_globalExporterUser_id': $(user_globalExporterUser_id)
       'user_globalExporterUser_secret': $(user_globalExporterUser_secret)
+      'user_globalImporterUser_id': $(user_globalImporterUser_id)
+      'user_globalImporterUser_secret': $(user_globalImporterUser_secret)
       'user_globalReaderUser_id': $(user_globalReaderUser_id)
       'user_globalReaderUser_secret': $(user_globalReaderUser_secret)
       'user_globalWriterUser_id': $(user_globalWriterUser_id)
@@ -218,6 +219,15 @@ jobs:
         Write-Host "##vso[task.setvariable variable=TestContainerRegistryServer]$($acrLoginServer)"
         Write-Host "##vso[task.setvariable variable=TestContainerRegistryPassword]$($acrPassword)"
 
+        $integrationStoreSettings = $appSettings | where {$_.Name -eq "FhirServer__Operations__IntegrationDataStore__StorageAccountUri"}
+        $integrationStoreUri = $integrationStoreSettings[0].Value
+        Write-Host "$integrationStoreUri"
+        $integrationStoreAccountName = [System.Uri]::new("$integrationStoreUri").Host.Split('.')[0]
+        $integrationStoreKey = Get-AzStorageAccountKey -ResourceGroupName $(ResourceGroupName) -Name "$integrationStoreAccountName" | Where-Object {$_.KeyName -eq "key1"}
+        
+        Write-Host "##vso[task.setvariable variable=TestIntegrationStoreUri]$($integrationStoreUri)"
+        Write-Host "##vso[task.setvariable variable=TestIntegrationStoreKey]$($integrationStoreKey.Value)"
+
         $exportStoreSettings = $appSettings | where {$_.Name -eq "FhirServer__Operations__Export__StorageAccountUri"}
         $exportStoreUri = $exportStoreSettings[0].Value
         Write-Host "$exportStoreUri"
@@ -244,7 +254,6 @@ jobs:
             }
             Write-Host "##vso[task.setvariable variable=$($environmentVariableName)]$($plainValue)"
         }
-        # ----------------------------------------
 
         dotnet dev-certs https
 
@@ -262,6 +271,8 @@ jobs:
       'AllStorageAccounts': $(AllStorageAccounts)
       'TestContainerRegistryServer': $(TestContainerRegistryServer)
       'TestContainerRegistryPassword': $(TestContainerRegistryPassword)
+      'TestIntegrationStoreUri': $(TestIntegrationStoreUri)
+      'TestIntegrationStoreKey': $(TestIntegrationStoreKey)
       'TestExportStoreUri': $(TestExportStoreUri)
       'TestExportStoreKey': $(TestExportStoreKey)
       'tenant-admin-service-principal-name': $(tenant-admin-service-principal-name)
@@ -281,6 +292,8 @@ jobs:
       'user_globalConverterUser_secret': $(user_globalConverterUser_secret)
       'user_globalExporterUser_id': $(user_globalExporterUser_id)
       'user_globalExporterUser_secret': $(user_globalExporterUser_secret)
+      'user_globalImporterUser_id': $(user_globalImporterUser_id)
+      'user_globalImporterUser_secret': $(user_globalImporterUser_secret)
       'user_globalReaderUser_id': $(user_globalReaderUser_id)
       'user_globalReaderUser_secret': $(user_globalReaderUser_secret)
       'user_globalWriterUser_id': $(user_globalWriterUser_id)
